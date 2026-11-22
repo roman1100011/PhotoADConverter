@@ -9,6 +9,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
+    build = ROOT / "build"
+    build.mkdir(exist_ok=True)
+    helper = build / "film-decode"
+    subprocess.run(
+        [
+            "swiftc",
+            "-O",
+            str(ROOT / "tools/image-studio/Sources/ImageImport/ImageImport.swift"),
+            str(ROOT / "scripts/decoder/main.swift"),
+            "-o",
+            str(helper),
+        ],
+        check=True,
+    )
     subprocess.run(
         [
             sys.executable,
@@ -20,6 +34,8 @@ def main() -> None:
             "--onedir",
             "--name",
             "Film Lab",
+            "--add-binary",
+            f"{helper}:.",
             "--paths",
             str(ROOT / "src"),
             "--distpath",
