@@ -10,6 +10,8 @@ class Preview(QLabel):
         self.reset_view()
 
     def reset_view(self):
+        self.drag_at = None
+        self.unsetCursor()
         self.zoom = 1.0
         self.focus = QPointF(0.5, 0.5)
         self.update()
@@ -27,6 +29,39 @@ class Preview(QLabel):
         return QRectF(
             origin(self.width(), w, self.focus.x()), origin(self.height(), h, self.focus.y()), w, h
         )
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and not self.pixmap().isNull():
+            rect = self.image_rect()
+            if rect.contains(event.position()) and (
+                rect.width() > self.width() or rect.height() > self.height()
+            ):
+                self.drag_at = event.position()
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
+                event.accept()
+                return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.drag_at is None or not event.buttons() & Qt.MouseButton.LeftButton:
+            return super().mouseMoveEvent(event)
+        rect = self.image_rect()
+        delta = event.position() - self.drag_at
+        self.drag_at = event.position()
+        self.focus = QPointF(
+            (self.width() / 2 - rect.x() - delta.x()) / rect.width(),
+            (self.height() / 2 - rect.y() - delta.y()) / rect.height(),
+        )
+        self.update()
+        event.accept()
+
+    def mouseReleaseEvent(self, event):
+        if self.drag_at is not None and event.button() == Qt.MouseButton.LeftButton:
+            self.drag_at = None
+            self.unsetCursor()
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
 
     def event(self, event):
         if (
